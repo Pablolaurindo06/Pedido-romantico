@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cartão Coração com Balões e Contagem Regressiva</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #ffe6f0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .card-container {
+    perspective: 1000px;
+  }
+
+  .card {
+    width: 250px;
+    height: 250px;
+    position: relative;
+    cursor: pointer;
+    transform-style: preserve-3d;
+    transition: transform 1s ease;
+  }
+
+  /* Coracao */
+  .heart {
+    width: 250px;
+    height: 250px;
+    background: red;
+    position: relative;
+    clip-path: polygon(
+      50% 15%, 
+      85% 0%, 
+      100% 30%, 
+      100% 60%, 
+      50% 100%, 
+      0% 60%, 
+      0% 30%, 
+      15% 0%
+    );
+    box-shadow: 0 0 20px rgba(255,0,0,0.6);
+  }
+
+  .card.open {
+    transform: rotateY(180deg);
+  }
+
+  /* Frente do cartão */
+  .card-front,
+  .card-back {
+    position: absolute;
+    width: 250px;
+    height: 250px;
+    backface-visibility: hidden;
+    top: 0;
+    left: 0;
+  }
+
+  .card-front {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .card-front .heart {
+    background: linear-gradient(135deg, #ff1e56, #ff6e7f);
+  }
+
+  /* Verso do cartão */
+  .card-back {
+    background: #fff0f5;
+    border-radius: 20px;
+    box-shadow: 0 0 20px rgba(255,0,100,0.3);
+    transform: rotateY(180deg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 15px;
+    font-size: 1.3rem;
+    color: #ff1e56;
+    text-align: center;
+  }
+
+  .card-back .phrase {
+    font-size: 1rem;
+    margin-top: 15px;
+    font-style: italic;
+    color: #c71585;
+  }
+
+  /* Balões e corações animados */
+  .balloon,
+  .floating-heart,
+  .floating-text {
+    position: absolute;
+    opacity: 0;
+    animation-fill-mode: forwards;
+  }
+
+  .balloon {
+    width: 40px;
+    height: 60px;
+    background: radial-gradient(circle at 50% 40%, #ff6e7f, #ff1e56);
+    border-radius: 20px 20px 20px 20px / 30px 30px 10px 10px;
+    animation-name: floatUp;
+    animation-timing-function: ease-out;
+    animation-duration: 6s;
+  }
+
+  .balloon::after {
+    content: '';
+    position: absolute;
+    bottom: -15px;
+    left: 18px;
+    width: 5px;
+    height: 15px;
+    background: #ff1e56;
+    border-radius: 2px;
+  }
+
+  .floating-heart {
+    width: 30px;
+    height: 30px;
+    background: #ff1e56;
+    clip-path: polygon(
+      50% 15%, 
+      85% 0%, 
+      100% 30%, 
+      100% 60%, 
+      50% 100%, 
+      0% 60%, 
+      0% 30%, 
+      15% 0%
+    );
+    animation-name: floatUpSmall;
+    animation-timing-function: ease-out;
+    animation-duration: 5s;
+  }
+
+  .floating-text {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: #ff1e56;
+    animation-name: floatUpText;
+    animation-timing-function: ease-out;
+    animation-duration: 6s;
+  }
+
+  @keyframes floatUp {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-300px) scale(1.2);
+    }
+  }
+
+  @keyframes floatUpSmall {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-250px) scale(1.5);
+    }
+  }
+
+  @keyframes floatUpText {
+    0% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translateY(-280px) scale(1.3);
+    }
+  }
+
+  /* Contagem regressiva */
+  #countdown {
+    margin-top: 30px;
+    font-size: 2rem;
+    color: #ff1e56;
+    font-weight: 700;
+    text-shadow: 0 0 10px #ff6e7f;
+  }
+</style>
+</head>
+<body>
+
+<div class="card-container">
+  <div class="card" id="card">
+    <div class="card-front">
+      <div class="heart"></div>
+    </div>
+    <div class="card-back" id="cardBack">
+      <div>Te Amo ❤️</div>
+      <div class="phrase">Está chegando nosso aniversário de 2 anos de namoro, amor 💕</div>
+    </div>
+  </div>
+
+  <!-- Balões -->
+  <div id="balloons-container"></div>
+</div>
+
+<div id="countdown"></div>
+
+<script>
+  const card = document.getElementById('card');
+  const balloonsContainer = document.getElementById('balloons-container');
+
+  function createBalloon() {
+    const balloon = document.createElement('div');
+    balloon.classList.add('balloon');
+    balloon.style.left = Math.random() * 200 + 'px';
+    balloon.style.animationDelay = (Math.random() * 3) + 's';
+    balloonsContainer.appendChild(balloon);
+    setTimeout(() => balloon.remove(), 6000);
+  }
+
+  function createHeart() {
+    const heart = document.createElement('div');
+    heart.classList.add('floating-heart');
+    heart.style.left = Math.random() * 200 + 'px';
+    heart.style.animationDelay = (Math.random() * 3) + 's';
+    balloonsContainer.appendChild(heart);
+    setTimeout(() => heart.remove(), 5000);
+  }
+
+  function createText() {
+    const text = document.createElement('div');
+    text.classList.add('floating-text');
+    text.style.left = Math.random() * 200 + 'px';
+    text.style.animationDelay = (Math.random() * 3) + 's';
+    text.textContent = "Te Amo";
+    balloonsContainer.appendChild(text);
+    setTimeout(() => text.remove(), 6000);
+  }
+
+  let intervalIds = [];
+
+  card.addEventListener('click', () => {
+    card.classList.toggle('open');
+
+    if (card.classList.contains('open')) {
+      intervalIds.push(setInterval(createBalloon, 800));
+      intervalIds.push(setInterval(createHeart, 1000));
+      intervalIds.push(setInterval(createText, 1200));
+    } else {
+      intervalIds.forEach(id => clearInterval(id));
+      intervalIds = [];
+      balloonsContainer.innerHTML = '';
+    }
+  });
+
+  // Contagem regressiva
+  const countdown = document.getElementById('countdown');
+  const targetDate = new Date('2025-06-11T00:00:00');
+
+  function updateCountdown() {
+    const now = new Date();
+    const diff = targetDate - now;
+
+    if (diff <= 0) {
+      countdown.textContent = 'Dia especial chegou! ❤️';
+      clearInterval(countdownInterval);
+      return;
+    }
+
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+    const minutes = Math.floor((diff / (1000 * 60)) % 60);
+    const seconds = Math.floor((diff / 1000) % 60);
+
+    countdown.textContent = `Faltam ${days}d ${hours}h ${minutes}m ${seconds}s para 11/06/2025`;
+  }
+
+  updateCountdown();
+  const countdownInterval = setInterval(updateCountdown, 1000);
+</script>
+
+</body>
+</html>
